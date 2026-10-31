@@ -28,6 +28,51 @@
     [data-tema="claro"] .aviso.erro { background: #fde2e7; color: #6b1020; }
     [data-tema="claro"] .aviso.ok { background: #d9f5e8; color: #0b4a2c; }
 
+    /* sem setinhas nos campos numéricos */
+    input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+    /* chips (rodadas, dias, horários) */
+    .chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 10px; scrollbar-width: none; }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip {
+      flex: none; white-space: nowrap; padding: 9px 14px; border-radius: 999px;
+      background: var(--painel2); color: var(--texto);
+      border: 1px solid var(--borda); font-size: 13px; transition: .15s;
+    }
+    .chip.ativa { background: var(--verde); color: var(--on); border-color: transparent; transform: scale(1.05); }
+
+    /* menu da administração */
+    .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .tile {
+      display: grid; gap: 4px; text-align: left; padding: 16px;
+      background: var(--painel); color: var(--texto);
+      border: 1px solid var(--borda); border-radius: 15px; font-size: 26px;
+    }
+    .tile b { font-size: 15px; }
+    .tile small { color: var(--suave); font-size: 12px; font-weight: 400; }
+    .tile:active { transform: scale(.97); }
+
+    /* aviso de sucesso animado */
+    #toast {
+      position: fixed; left: 50%; bottom: 28px; z-index: 50;
+      transform: translate(-50%, 40px); opacity: 0; pointer-events: none;
+      display: flex; align-items: center; gap: 12px; max-width: 90vw;
+      padding: 12px 18px; border-radius: 14px; white-space: pre-wrap;
+      background: var(--painel2); color: var(--texto); border: 1px solid var(--verde);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35); transition: .3s;
+    }
+    #toast.mostrar { opacity: 1; transform: translate(-50%, 0); }
+    .check { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--verde); display: grid; place-items: center; }
+    .check svg { width: 16px; height: 16px; fill: none; stroke: var(--on); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 24; stroke-dashoffset: 24; }
+    #toast.mostrar .check { animation: pop .4s ease; }
+    #toast.mostrar .check svg { animation: tracar .45s .15s ease forwards; }
+    @keyframes tracar { to { stroke-dashoffset: 0; } }
+    @keyframes pop { 0% { transform: scale(.3); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
+    .jogo.salvoOk { animation: pulsar .9s ease; }
+    @keyframes pulsar { 0% { box-shadow: 0 0 0 0 var(--verde); } 100% { box-shadow: 0 0 0 16px transparent; } }
+
     * { box-sizing: border-box; }
 
     body {
@@ -409,11 +454,10 @@
             Você ganha 5 pontos pelo placar exato e 3 por acertar vitória,
             empate ou derrota. O palpite fecha no horário do jogo.
           </p>
-          <label>Filtrar rodada
-            <select id="filtroRodada">
-              <option value="">Todas as rodadas</option>
-            </select>
-          </label>
+          <div id="chipsRodada" class="chips"></div>
+          <select id="filtroRodada" class="oculto">
+            <option value="">Todas as rodadas</option>
+          </select>
           <div id="listaJogos"></div>
         </div>
       </section>
@@ -469,8 +513,23 @@
         <div class="card">
           <h2>⚙️ Administração</h2>
           <p class="muted">
-            Cadastre times e partidas, registre resultados e gerencie participantes.
+            Escolha uma opção.
           </p>
+        </div>
+
+        <div id="admMenu" class="tiles">
+          <button class="tile" data-adm="jogos">⚽<b>Jogos</b><small>cadastrar, editar, excluir</small></button>
+          <button class="tile" data-adm="resultados">🏁<b>Resultados</b><small>lançar placar</small></button>
+          <button class="tile" data-adm="times">🛡️<b>Times</b><small>adicionar e editar</small></button>
+          <button class="tile" data-adm="participantes">👥<b>Participantes</b><small>contas e palpites</small></button>
+          <button class="tile" data-adm="pagamentos">💰<b>Pagamentos</b><small>controle da entrada</small></button>
+          <button class="tile" data-adm="avisos">📢<b>Avisos</b><small>mural para todos</small></button>
+          <button class="tile" data-adm="config">⚙️<b>Configurações</b><small>campeonatos e prazo</small></button>
+        </div>
+
+        <div id="admVoltar" class="oculto" style="margin-bottom:14px;display:flex;align-items:center;gap:12px">
+          <button class="secundario pequeno" id="btnAdmVoltar">← Menu</button>
+          <strong id="admTitulo"></strong>
         </div>
 
         <div class="grade">
@@ -505,9 +564,7 @@
               <label>Visitante
                 <select id="jogoVisitante" required></select>
               </label>
-              <label>Data e hora (horário de Brasília)
-                <input id="jogoData" type="datetime-local" required>
-              </label>
+              <div style="margin:12px 0"><div class="muted" style="margin-bottom:6px;font-size:13px">Data e hora (horário de Brasília)</div><input id="jogoData" type="hidden"><div class="dtp" data-alvo="jogoData"></div></div>
               <button type="submit">Cadastrar jogo</button>
             </form>
           </div>
@@ -550,9 +607,7 @@
             <label>Visitante
               <select id="edVisitante" required></select>
             </label>
-            <label>Data e hora (horário de Brasília)
-              <input id="edData" type="datetime-local" required>
-            </label>
+            <div style="margin:12px 0"><div class="muted" style="margin-bottom:6px;font-size:13px">Data e hora (horário de Brasília)</div><input id="edData" type="hidden"><div class="dtp" data-alvo="edData"></div></div>
             <div class="botoes">
               <button type="submit">Salvar alterações</button>
               <button type="button" id="btnReabrirJogo" class="secundario">Reabrir (desfazer resultado)</button>
@@ -672,6 +727,8 @@
     </section>
   </main>
 
+  <div id="toast"><span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span id="toastTexto"></span></div>
+
   <script>
     "use strict";
 
@@ -692,7 +749,19 @@
 
     const $ = id => document.getElementById(id);
 
+    let toastTimer;
+    function toast(texto) {
+      const t = $("toast");
+      $("toastTexto").textContent = texto;
+      t.classList.remove("mostrar");
+      void t.offsetWidth;
+      t.classList.add("mostrar");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove("mostrar"), 2600);
+    }
+
     function mostrarMensagem(texto, tipo) {
+      if (tipo === "ok") { limparMensagem(); toast(texto); return; }
       const el = $("mensagem");
       el.textContent = texto;
       el.className = "aviso " + (tipo || "");
@@ -881,11 +950,21 @@
         ).join("");
       $("filtroRodada").value = filtroAtual;
 
+      // abre já na primeira rodada que ainda tem jogo aberto
+      if (!estado.rodadaDefinida && rodadas.length) {
+        estado.rodadaDefinida = true;
+        const aberta = jogosAtuais()
+          .filter(j => j.status !== "ENCERRADO" && new Date() < new Date(j.limite))
+          .map(j => j.rodada).sort((a, b) => a - b)[0];
+        $("filtroRodada").value = String(aberta || rodadas[rodadas.length - 1]);
+      }
+      desenharChipsRodada(rodadas);
+
       const meus = d.meusPalpites || [];
       let jogos = jogosAtuais().slice().sort((a, b) =>
         new Date(a.dataHora) - new Date(b.dataHora));
 
-      if (filtro) jogos = jogos.filter(j => String(j.rodada) === filtro);
+      if ($("filtroRodada").value) jogos = jogos.filter(j => String(j.rodada) === $("filtroRodada").value);
 
       if (!jogos.length) {
         $("listaJogos").innerHTML =
@@ -900,12 +979,13 @@
         const admin = d.usuario.perfil === "ADMIN";
         const resultado = j.status === "ENCERRADO";
         const podePalpitar = !fechado;
+        const q = quando(j);
 
         return `
-          <article class="jogo">
+          <article class="jogo" id="jogo_${j.id}">
             <div class="jogoTopo">
               <span>Rodada ${j.rodada}</span>
-              <span>${textoSeguro(j.dataExibicao)}</span>
+              <span>📅 ${q.dia} · ⏰ <strong style="color:var(--texto);font-size:15px">${q.hora}</strong></span>
             </div>
             <div class="confronto">
               <div class="time">
@@ -960,6 +1040,11 @@
           Number(m.value), Number(v.value));
         await atualizarDadosSemBloqueio();
         mostrarMensagem("Palpite salvo com sucesso!", "ok");
+        const card = $("jogo_" + jogoId);
+        if (card) {
+          card.classList.add("salvoOk");
+          setTimeout(() => card.classList.remove("salvoOk"), 1000);
+        }
       } catch (erro) {}
     }
 
@@ -1199,6 +1284,7 @@
 
       const painel = $("painel" + nome.charAt(0).toUpperCase() + nome.slice(1));
       if (painel) painel.classList.remove("oculto");
+      if (nome === "admin") abrirAdm("");
 
       document.querySelectorAll(".abaBotao").forEach(b =>
         b.classList.toggle("ativa", b.dataset.aba === nome));
@@ -1413,6 +1499,8 @@
 
     $("seletorCamp").addEventListener("change", e => {
       estado.camp = e.target.value;
+      estado.rodadaDefinida = false;
+      $("filtroRodada").value = "";
       desenharJogos();
       desenharRanking();
     });
@@ -1556,7 +1644,7 @@ vitoria|Vitória|#e31b23|#140b0c|#ffffff`.split("\n").forEach(l => {
       $("edRodada").value = j.rodada;
       $("edMandante").value = j.mandanteId;
       $("edVisitante").value = j.visitanteId;
-      $("edData").value = String(j.dataHora).slice(0, 16);
+      dtpDefinir("edData", String(j.dataHora).slice(0, 16));
     }
     $("edJogoSel").addEventListener("change", preencherEdicaoJogo);
 
@@ -1634,6 +1722,147 @@ vitoria|Vitória|#e31b23|#140b0c|#ffffff`.split("\n").forEach(l => {
           r.naoEncontrados.length ? "" : "ok");
       } catch (erro) {}
     });
+
+
+    /* ===== Horário do jogo e chips de rodada ===== */
+    function quando(j) {
+      try {
+        const d = new Date(j.dataHora);
+        const f = o => new Intl.DateTimeFormat("pt-BR",
+          Object.assign({ timeZone: "America/Sao_Paulo" }, o)).format(d);
+        return {
+          dia: f({ weekday: "short", day: "2-digit", month: "2-digit" }).replace(/\./g, ""),
+          hora: f({ hour: "2-digit", minute: "2-digit", hour12: false })
+        };
+      } catch (e) {
+        return { dia: j.dataExibicao, hora: "" };
+      }
+    }
+
+    function desenharChipsRodada(rodadas) {
+      const atual = $("filtroRodada").value;
+      const box = $("chipsRodada");
+      box.innerHTML = `<button class="chip ${atual === "" ? "ativa" : ""}" data-r="">Todas</button>` +
+        rodadas.map(r =>
+          `<button class="chip ${String(r) === atual ? "ativa" : ""}" data-r="${r}">Rodada ${r}</button>`
+        ).join("");
+      const ativo = box.querySelector(".ativa");
+      if (ativo) box.scrollLeft = ativo.offsetLeft - box.clientWidth / 2 + ativo.clientWidth / 2;
+    }
+
+    $("chipsRodada").addEventListener("click", e => {
+      const b = e.target.closest(".chip");
+      if (!b) return;
+      $("filtroRodada").value = b.dataset.r;
+      desenharJogos();
+    });
+
+    /* ===== Seletor digital de data e hora ===== */
+    const DIAS_CURTOS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    const dtp = {};
+
+    function dtpDesenhar(alvo) {
+      const st = dtp[alvo], el = st.el;
+      el.querySelectorAll("[data-d]").forEach(b => b.classList.toggle("ativa", b.dataset.d === st.d));
+      el.querySelectorAll("[data-t]").forEach(b => b.classList.toggle("ativa", b.dataset.t === st.t));
+      el.querySelector('[data-r="data"]').value = st.d;
+      el.querySelector('[data-r="hora"]').value = st.t;
+      $(alvo).value = st.d && st.t ? st.d + "T" + st.t : "";
+      el.querySelector(".dtpResumo").textContent = st.d && st.t
+        ? "✅ " + st.d.split("-").reverse().join("/") + " às " + st.t
+        : "Escolha o dia e o horário";
+    }
+
+    function dtpDefinir(alvo, valor) {
+      const st = dtp[alvo];
+      if (!st) return;
+      const m = String(valor || "").match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+      st.d = m ? m[1] : "";
+      st.t = m ? m[2] : "";
+      dtpDesenhar(alvo);
+    }
+
+    function montarDtp(el) {
+      const alvo = el.dataset.alvo;
+      const hoje = new Date();
+      const dias = Array.from({ length: 10 }, (_, i) => {
+        const x = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + i);
+        const dd = String(x.getDate()).padStart(2, "0");
+        const mm = String(x.getMonth() + 1).padStart(2, "0");
+        return {
+          v: `${x.getFullYear()}-${mm}-${dd}`,
+          r: i === 0 ? "Hoje" : i === 1 ? "Amanhã" : `${DIAS_CURTOS[x.getDay()]} ${dd}/${mm}`
+        };
+      });
+      const horas = ["11:00", "13:00", "15:00", "16:00", "17:00", "18:30", "19:00", "20:00", "21:30"];
+
+      el.innerHTML = `
+        <div class="muted">Dia</div>
+        <div class="chips">${dias.map(d =>
+          `<button type="button" class="chip" data-d="${d.v}">${d.r}</button>`).join("")}</div>
+        <input type="date" data-r="data" style="margin:0 0 12px">
+        <div class="muted">Horário</div>
+        <div class="chips">${horas.map(h =>
+          `<button type="button" class="chip" data-t="${h}">${h}</button>`).join("")}</div>
+        <input type="time" data-r="hora" style="margin:0">
+        <div class="dtpResumo aviso" style="margin:12px 0 0"></div>`;
+
+      dtp[alvo] = { el, d: "", t: "" };
+
+      el.addEventListener("click", e => {
+        const b = e.target.closest(".chip");
+        if (!b) return;
+        if (b.dataset.d) dtp[alvo].d = b.dataset.d;
+        if (b.dataset.t) dtp[alvo].t = b.dataset.t;
+        dtpDesenhar(alvo);
+      });
+      el.addEventListener("input", e => {
+        const r = e.target.dataset.r;
+        if (r === "data") dtp[alvo].d = e.target.value;
+        if (r === "hora") dtp[alvo].t = e.target.value;
+        dtpDesenhar(alvo);
+      });
+
+      const form = $(alvo).closest("form");
+      if (form) form.addEventListener("reset", () => setTimeout(() => dtpDefinir(alvo, ""), 0));
+      dtpDesenhar(alvo);
+    }
+
+    document.querySelectorAll(".dtp").forEach(montarDtp);
+
+    /* ===== Administração em menu ===== */
+    const ADM_GRUPOS = {
+      "Adicionar time": "times", "Editar time": "times",
+      "Cadastrar jogo": "jogos", "Cadastrar jogos em lote": "jogos",
+      "Editar ou excluir partida": "jogos",
+      "Registrar resultado": "resultados",
+      "Participantes": "participantes", "Quem ainda não palpitou": "participantes",
+      "Palpites registrados": "participantes",
+      "Pagamentos": "pagamentos", "Mural de avisos": "avisos",
+      "Campeonatos e configurações": "config"
+    };
+    const ADM_TITULOS = {
+      jogos: "⚽ Jogos", resultados: "🏁 Resultados", times: "🛡️ Times",
+      participantes: "👥 Participantes", pagamentos: "💰 Pagamentos",
+      avisos: "📢 Avisos", config: "⚙️ Configurações"
+    };
+
+    function abrirAdm(g) {
+      document.querySelectorAll("#painelAdmin .card").forEach(c => {
+        const h3 = c.querySelector("h3");
+        const grupo = h3 ? (ADM_GRUPOS[h3.textContent.trim()] || "x") : "intro";
+        c.classList.toggle("oculto", grupo === "intro" ? !!g : grupo !== g);
+      });
+      $("admMenu").classList.toggle("oculto", !!g);
+      $("admVoltar").classList.toggle("oculto", !g);
+      $("admTitulo").textContent = g ? ADM_TITULOS[g] : "";
+      window.scrollTo({ top: 0 });
+    }
+
+    document.querySelectorAll("#admMenu .tile").forEach(b =>
+      b.addEventListener("click", () => abrirAdm(b.dataset.adm)));
+    $("btnAdmVoltar").addEventListener("click", () => abrirAdm(""));
+    abrirAdm("");
 
     (async function iniciar() {
       if (estado.token) {
