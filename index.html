@@ -4,6 +4,7 @@
   <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
   <title>Bolão Brasileirão</title>
 
   <style>
@@ -406,6 +407,9 @@
         <div class="card">
           <h2>🏆 Classificação geral</h2>
           <p class="muted">Desempate: maior número de placares exatos.</p>
+          <label>Classificação
+            <select id="filtroRankingRodada"><option value="">Geral</option></select>
+          </label>
           <div id="listaRanking"></div>
         </div>
       </section>
@@ -484,6 +488,39 @@
         </div>
 
         <div class="card">
+          <h3>Editar time</h3>
+          <form id="formEditarTime">
+            <label>Time
+              <select id="editTimeId" required></select>
+            </label>
+            <label>Nome
+              <input id="editTimeNome" required>
+            </label>
+            <label>Sigla
+              <input id="editTimeSigla" maxlength="5" required>
+            </label>
+            <label>URL do escudo
+              <input id="editTimeEscudo" type="url" placeholder="https://...">
+            </label>
+            <img id="editTimePreview" class="escudo oculto" alt="">
+            <button type="submit">Salvar alterações</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Cadastrar jogos em lote</h3>
+          <p class="muted">Um jogo por linha, no formato:<br>
+            <strong>rodada;MANDANTE;VISITANTE;dd/MM/aaaa HH:mm</strong><br>
+            Exemplo: 12;FLA;PAL;15/11/2026 16:00<br>
+            Use a sigla ou o nome do time.</p>
+          <form id="formLote">
+            <textarea id="loteTexto" rows="6" required
+              style="width:100%;padding:12px;border:1px solid var(--borda);border-radius:9px;color:var(--texto);background:#0d1628;font:inherit"></textarea>
+            <div class="botoes"><button type="submit">Cadastrar jogos</button></div>
+          </form>
+        </div>
+
+        <div class="card">
           <h3>Registrar resultado</h3>
           <form id="formResultado">
             <label>Partida
@@ -512,6 +549,12 @@
             </label>
             <button type="submit">Alterar horário</button>
           </form>
+        </div>
+
+        <div class="card">
+          <h3>Quem ainda não palpitou</h3>
+          <p class="muted">Participantes com jogos abertos sem palpite.</p>
+          <div id="listaPendentes"></div>
         </div>
 
         <div class="card">
@@ -561,7 +604,7 @@
 
     // Cole aqui o link /exec da implantação do Apps Script
     // (necessário só quando esta página é hospedada fora do Google).
-    const API_URL = "https://script.google.com/macros/s/AKfycbyr2erKiDR70B5QDlmdS2PQ5KQt4g_hFqHhnPdA6ySNxZWewrFkH8dhF4kEZbhXUzl9XA/exec";
+    const API_URL = "COLE_AQUI_O_LINK_EXEC";
 
     function chamarServidor(funcao, ...args) {
       // Dentro do Apps Script: usa o método nativo.
@@ -706,6 +749,19 @@
         referrerpolicy="no-referrer" onerror="this.style.display='none'">`;
     }
 
+    function palpitesDoJogoHtml(j) {
+      const lista = (estado.dados.palpitesJogos || [])
+        .filter(p => String(p.jogoId) === String(j.id));
+      if (!lista.length) return "";
+
+      return `<details style="margin-top:10px">
+        <summary class="muted" style="cursor:pointer">
+          Ver palpites da galera (${lista.length})</summary>` +
+        lista.map(p => `<div class="linha"><span>${textoSeguro(p.nome)}</span>
+          <strong>${p.golsMandante} × ${p.golsVisitante}</strong></div>`).join("") +
+        `</details>`;
+    }
+
     function desenharJogos() {
       const d = estado.dados;
       const filtro = $("filtroRodada").value;
@@ -780,6 +836,7 @@
                    </button>`
                 : ""}
             </div>
+            ${palpitesDoJogoHtml(j)}
           </article>`;
       }).join("");
     }
@@ -801,8 +858,54 @@
       } catch (erro) {}
     }
 
+    function pontosCliente(p, j) {
+      const pm = Number(p.golsMandante), pv = Number(p.golsVisitante);
+      const rm = Number(j.golsMandante), rv = Number(j.golsVisitante);
+      if (pm === rm && pv === rv) return 5;
+      return Math.sign(pm - pv) === Math.sign(rm - rv) ? 3 : 0;
+    }
+
+    function rankingRodada(r) {
+      const d = estado.dados;
+      const lista = (d.ranking || []).map(x => ({
+        usuarioId: x.usuarioId, nome: x.nome,
+        pontos: 0, exatos: 0, palpitesFeitos: 0
+      }));
+
+      d.jogos.filter(j => j.rodada === r && j.status === "ENCERRADO")
+        .forEach(j => {
+          (d.palpitesJogos || [])
+            .filter(p => String(p.jogoId) === String(j.id))
+            .forEach(p => {
+              const u = lista.find(x => String(x.usuarioId) === String(p.usuarioId));
+              if (!u) return;
+              const pts = pontosCliente(p, j);
+              u.pontos += pts;
+              u.palpitesFeitos++;
+              if (pts === 5) u.exatos++;
+            });
+        });
+
+      lista.sort((a, b) => b.pontos - a.pontos || b.exatos - a.exatos ||
+        a.nome.localeCompare(b.nome));
+      lista.forEach((x, i) => x.posicao = i + 1);
+      return lista;
+    }
+
     function desenharRanking() {
-      const ranking = estado.dados.ranking || [];
+      const d = estado.dados;
+      const sel = $("filtroRankingRodada");
+      const atual = sel.value;
+      const rodadasEnc = [...new Set(d.jogos
+        .filter(j => j.status === "ENCERRADO").map(j => j.rodada))]
+        .sort((a, b) => a - b);
+      sel.innerHTML = '<option value="">Geral</option>' +
+        rodadasEnc.map(r => `<option value="${r}">Rodada ${r}</option>`).join("");
+      sel.value = atual;
+
+      const ranking = sel.value
+        ? rankingRodada(Number(sel.value))
+        : (d.ranking || []);
 
       if (!ranking.length) {
         $("listaRanking").innerHTML =
@@ -892,6 +995,7 @@
 
       preencherSelect("jogoMandante", times, "Escolha o mandante");
       preencherSelect("jogoVisitante", times, "Escolha o visitante");
+      preencherSelect("editTimeId", times, "Escolha o time");
 
       const jogos = d.jogos.map(j => ({
         value: j.id,
@@ -904,6 +1008,13 @@
         return jogo && jogo.status !== "ENCERRADO";
       }), "Escolha a partida");
 
+      $("listaPendentes").innerHTML = (d.pendentes || []).map(p => `
+        <div class="linha">
+          <strong>${textoSeguro(p.nome)}</strong>
+          <span class="muted">faltam ${p.faltam} jogo(s)</span>
+        </div>`).join("") ||
+        '<div class="vazio">Todo mundo está em dia. 🎉</div>';
+
       $("listaUsuarios").innerHTML = d.usuarios.map(u => `
         <div class="linha">
           <div>
@@ -911,10 +1022,13 @@
             <div class="muted">${textoSeguro(u.perfil)} · ${u.ativo ? "Ativo" : "Inativo"}</div>
           </div>
           ${u.ativo && u.perfil !== "ADMIN"
-            ? `<button class="perigo pequeno"
-                onclick="desativarUsuario('${u.id}','${textoSeguro(u.nome)}')">
-                Desativar
-               </button>` : ""}
+            ? `<div class="botoes" style="margin:0">
+                <button class="secundario pequeno"
+                  onclick="redefinirPinTela('${u.id}')">Redefinir PIN</button>
+                <button class="perigo pequeno"
+                  onclick="desativarUsuario('${u.id}','${textoSeguro(u.nome)}')">
+                  Desativar</button>
+               </div>` : ""}
         </div>`).join("") || '<div class="vazio">Nenhum participante.</div>';
 
       $("listaPalpitesAdmin").innerHTML = d.palpitesAdmin.map(p => `
@@ -925,6 +1039,14 @@
           </div>
           <strong>${textoSeguro(p.placar)}</strong>
         </div>`).join("") || '<div class="vazio">Nenhum palpite registrado.</div>';
+    }
+
+    async function redefinirPinTela(id) {
+      const u = (estado.dados.usuarios || []).find(x => String(x.id) === String(id));
+      const pin = prompt("Novo PIN para " + (u ? u.nome : "o participante") +
+        " (4 a 8 números):");
+      if (pin === null) return;
+      await acao("redefinirPin", id, pin.trim());
     }
 
     async function desativarUsuario(id, nome) {
@@ -1000,6 +1122,7 @@
     });
 
     $("filtroRodada").addEventListener("change", desenharJogos);
+    $("filtroRankingRodada").addEventListener("change", desenharRanking);
 
     $("formPin").addEventListener("submit", async e => {
       e.preventDefault();
@@ -1014,6 +1137,50 @@
           $("pinAtual").value, $("pinNovo").value);
         $("formPin").reset();
         mostrarMensagem("PIN alterado com sucesso.", "ok");
+      } catch (erro) {}
+    });
+
+    function preencherEdicaoTime() {
+      const t = (estado.dados.times || []).find(x =>
+        String(x.id) === $("editTimeId").value);
+
+      $("editTimeNome").value = t ? t.nome : "";
+      $("editTimeSigla").value = t ? t.sigla : "";
+      $("editTimeEscudo").value = t ? (t.escudo || "") : "";
+
+      const prev = $("editTimePreview");
+      if (t && /^https?:\/\//i.test(t.escudo || "")) {
+        prev.src = t.escudo;
+        prev.classList.remove("oculto");
+      } else {
+        prev.classList.add("oculto");
+      }
+    }
+
+    $("editTimeId").addEventListener("change", preencherEdicaoTime);
+
+    $("formEditarTime").addEventListener("submit", async e => {
+      e.preventDefault();
+
+      try {
+        await executar("editarTime", estado.token,
+          $("editTimeId").value, $("editTimeNome").value,
+          $("editTimeSigla").value, $("editTimeEscudo").value);
+        await atualizarDadosSemBloqueio();
+        preencherEdicaoTime();
+        mostrarMensagem("Time atualizado.", "ok");
+      } catch (erro) {}
+    });
+
+    $("formLote").addEventListener("submit", async e => {
+      e.preventDefault();
+
+      try {
+        const r = await executar("cadastrarJogosLote", estado.token,
+          $("loteTexto").value);
+        $("formLote").reset();
+        await atualizarDadosSemBloqueio();
+        mostrarMensagem(r.total + " jogo(s) cadastrado(s).", "ok");
       } catch (erro) {}
     });
 
