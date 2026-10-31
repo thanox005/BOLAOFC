@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bolão Brasileirão</title>
+
+  <style>
+    :root {
+      --fundo: #0b1020;
+      --painel: #151e32;
+      --painel2: #1c2940;
+      --texto: #f4f7ff;
+      --suave: #aab6ce;
+      --verde: #39d98a;
+      --azul: #4c8dff;
+      --vermelho: #ff647c;
+      --borda: #2d3b55;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--fundo);
+      color: var(--texto);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 15px;
+      background: var(--verde);
+      color: #07160f;
+      font-weight: 800;
+    }
+
+    button:disabled {
+      opacity: .55;
+      cursor: wait;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin-top: 6px;
+      border: 1px solid var(--borda);
+      border-radius: 9px;
+      color: var(--texto);
+      background: #0d1628;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--azul);
+    }
+
+    label {
+      display: block;
+      margin: 12px 0;
+      color: var(--suave);
+      font-size: 13px;
+    }
+
+    h1, h2, h3 { margin-top: 0; }
+
+    h1 { font-size: 25px; }
+    h2 { font-size: 20px; }
+    h3 { font-size: 16px; }
+
+    .topo {
+      padding: 22px 16px;
+      background: linear-gradient(130deg, #14233b, #12372d);
+      border-bottom: 1px solid var(--borda);
+    }
+
+    .topoInterno, .conteudo {
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    .topoInterno {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .marca {
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: var(--verde);
+    }
+
+    .subtitulo {
+      color: var(--suave);
+      font-size: 13px;
+      margin-top: 5px;
+    }
+
+    .conteudo { padding: 18px 14px 50px; }
+
+    .card {
+      background: var(--painel);
+      border: 1px solid var(--borda);
+      border-radius: 15px;
+      padding: 17px;
+      margin-bottom: 16px;
+      min-width: 0;
+    }
+
+    .loginBox {
+      max-width: 440px;
+      margin: 35px auto;
+    }
+
+    .botoes {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .secundario {
+      background: var(--painel2);
+      color: var(--texto);
+      border: 1px solid var(--borda);
+    }
+
+    .perigo {
+      background: var(--vermelho);
+      color: #260710;
+    }
+
+    .pequeno { padding: 8px 10px; font-size: 12px; }
+
+    .grade {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .abas {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+    }
+
+    .abaBotao {
+      white-space: nowrap;
+      background: var(--painel2);
+      color: var(--texto);
+      border: 1px solid var(--borda);
+    }
+
+    .abaBotao.ativa {
+      background: var(--verde);
+      color: #07160f;
+    }
+
+    .jogo {
+      background: var(--painel2);
+      border: 1px solid var(--borda);
+      padding: 14px;
+      border-radius: 12px;
+      margin: 12px 0;
+    }
+
+    .jogoTopo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      color: var(--suave);
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .confronto {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+    }
+
+    .time {
+      text-align: center;
+      overflow-wrap: anywhere;
+      font-weight: 800;
+    }
+
+    .escudo {
+      display: block;
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      margin: 0 auto 6px;
+    }
+
+    .sigla {
+      display: block;
+      color: var(--verde);
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+
+    .placar {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .placar input {
+      width: 52px;
+      padding: 10px 4px;
+      text-align: center;
+      font-weight: 900;
+      font-size: 18px;
+    }
+
+    .placarResultado {
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .linha {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--borda);
+    }
+
+    .linha:last-child { border-bottom: 0; }
+
+    .muted { color: var(--suave); font-size: 13px; }
+    .verde { color: var(--verde); }
+    .oculto { display: none !important; }
+
+    .aviso {
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      background: #1d3046;
+      color: var(--texto);
+      white-space: pre-wrap;
+    }
+
+    .aviso.erro { background: #451c2b; color: #ffd9e0; }
+    .aviso.ok { background: #123d30; color: #c4ffe3; }
+
+    .tag {
+      display: inline-block;
+      padding: 5px 8px;
+      border-radius: 8px;
+      background: #273650;
+      color: var(--suave);
+      font-size: 11px;
+    }
+
+    .vazio {
+      text-align: center;
+      padding: 25px 10px;
+      color: var(--suave);
+    }
+
+    @media (max-width: 650px) {
+      .grade { grid-template-columns: 1fr; }
+      .topoInterno { align-items: flex-start; }
+      .topoInterno h1 { font-size: 21px; }
+      .confronto { gap: 4px; }
+      .time { font-size: 12px; }
+      .sigla { font-size: 18px; }
+      .card { padding: 13px; }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topo">
+    <div class="topoInterno">
+      <div>
+        <div class="marca">⚽ BOLÃO BRASILEIRÃO</div>
+        <h1 style="margin:8px 0 0">Dispute com sua galera</h1>
+        <div class="subtitulo">Dê seus palpites, some pontos e lidere o ranking.</div>
+      </div>
+      <div id="usuarioTopo" class="muted"></div>
+    </div>
+  </header>
+
+  <main class="conteudo">
+    <div id="mensagem" class="aviso oculto"></div>
+
+    <!-- LOGIN -->
+    <section id="telaLogin" class="loginBox">
+      <div class="card">
+        <h2>Entrar no bolão</h2>
+        <p class="muted">Entre com seu nome e PIN cadastrado.</p>
+
+        <form id="formLogin">
+          <label>Seu nome
+            <input id="loginNome" autocomplete="username" required>
+          </label>
+
+          <label>PIN de acesso
+            <input id="loginPin" type="password" inputmode="numeric"
+              minlength="4" maxlength="8" autocomplete="current-password" required>
+          </label>
+
+          <button type="submit" style="width:100%">Entrar</button>
+        </form>
+
+        <div style="text-align:center;margin:18px 0 8px" class="muted">
+          Ainda não participa?
+        </div>
+        <button class="secundario" id="abrirCadastro" style="width:100%">
+          Criar minha conta
+        </button>
+      </div>
+
+      <!-- CADASTRO COM CONVITE -->
+      <div id="painelCadastro" class="card oculto">
+        <h2>Criar minha conta</h2>
+        <p class="muted">
+          Peça o código de convite ao administrador do bolão.
+        </p>
+
+        <form id="formCadastro">
+          <label>Nome que aparecerá no ranking
+            <input id="cadNome" minlength="2" maxlength="60" required>
+          </label>
+
+          <label>Crie um PIN de 4 a 8 números
+            <input id="cadPin" type="password" inputmode="numeric"
+              minlength="4" maxlength="8" required>
+          </label>
+
+          <label>Repita seu PIN
+            <input id="cadPin2" type="password" inputmode="numeric"
+              minlength="4" maxlength="8" required>
+          </label>
+
+          <label>Código de convite
+            <input id="cadConvite" autocomplete="off" required>
+          </label>
+
+          <div class="botoes">
+            <button type="submit">Criar conta</button>
+            <button type="button" class="secundario" id="cancelarCadastro">
+              Voltar
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- APLICATIVO -->
+    <section id="telaApp" class="oculto">
+      <div class="card">
+        <div class="linha">
+          <div>
+            <div class="muted">Bem-vindo(a),</div>
+            <h2 id="nomeUsuario" style="margin:5px 0"></h2>
+            <span id="perfilUsuario" class="tag"></span>
+          </div>
+          <button id="btnSair" class="secundario pequeno">Sair</button>
+        </div>
+      </div>
+
+      <nav class="abas">
+        <button class="abaBotao ativa" data-aba="jogos">⚽ Jogos</button>
+        <button class="abaBotao" data-aba="ranking">🏆 Ranking</button>
+        <button class="abaBotao" data-aba="meus">📝 Meus palpites</button>
+        <button class="abaBotao" data-aba="conta">🔐 Minha conta</button>
+        <button class="abaBotao oculto" id="abaAdmin" data-aba="admin">⚙️ Administração</button>
+      </nav>
+
+      <section id="painelJogos" class="painelAba">
+        <div class="card">
+          <h2>Jogos e palpites</h2>
+          <p class="muted">
+            Você ganha 5 pontos pelo placar exato e 3 por acertar vitória,
+            empate ou derrota. O palpite fecha no horário do jogo.
+          </p>
+          <label>Filtrar rodada
+            <select id="filtroRodada">
+              <option value="">Todas as rodadas</option>
+            </select>
+          </label>
+          <div id="listaJogos"></div>
+        </div>
+      </section>
+
+      <section id="painelRanking" class="painelAba oculto">
+        <div class="card">
+          <h2>🏆 Classificação geral</h2>
+          <p class="muted">Desempate: maior número de placares exatos.</p>
+          <div id="listaRanking"></div>
+        </div>
+      </section>
+
+      <section id="painelMeus" class="painelAba oculto">
+        <div class="card">
+          <h2>📝 Meus palpites</h2>
+          <div id="listaMeus"></div>
+        </div>
+      </section>
+
+      <section id="painelConta" class="painelAba oculto">
+        <div class="card">
+          <h2>Alterar PIN</h2>
+          <form id="formPin">
+            <label>PIN atual
+              <input id="pinAtual" type="password" inputmode="numeric" required>
+            </label>
+            <label>Novo PIN (4 a 8 números)
+              <input id="pinNovo" type="password" inputmode="numeric"
+                minlength="4" maxlength="8" required>
+            </label>
+            <label>Repita o novo PIN
+              <input id="pinNovo2" type="password" inputmode="numeric"
+                minlength="4" maxlength="8" required>
+            </label>
+            <button type="submit">Alterar PIN</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ADMINISTRAÇÃO -->
+      <section id="painelAdmin" class="painelAba oculto">
+        <div class="card">
+          <h2>⚙️ Administração</h2>
+          <p class="muted">
+            Cadastre times e partidas, registre resultados e gerencie participantes.
+          </p>
+        </div>
+
+        <div class="grade">
+          <div class="card">
+            <h3>Adicionar time</h3>
+            <form id="formTime">
+              <label>Nome do time
+                <input id="timeNome" required>
+              </label>
+              <label>Sigla (ex.: BAH)
+                <input id="timeSigla" maxlength="5" required>
+              </label>
+              <label>URL do escudo (opcional)
+                <input id="timeEscudo" type="url" placeholder="https://...">
+              </label>
+              <button type="submit">Cadastrar time</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <h3>Cadastrar jogo</h3>
+            <form id="formJogo">
+              <label>Rodada
+                <input id="jogoRodada" type="number" min="1" required>
+              </label>
+              <label>Mandante
+                <select id="jogoMandante" required></select>
+              </label>
+              <label>Visitante
+                <select id="jogoVisitante" required></select>
+              </label>
+              <label>Data e hora (horário de Brasília)
+                <input id="jogoData" type="datetime-local" required>
+              </label>
+              <button type="submit">Cadastrar jogo</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Registrar resultado</h3>
+          <form id="formResultado">
+            <label>Partida
+              <select id="resultadoJogo" required></select>
+            </label>
+            <div class="grade">
+              <label>Gols do mandante
+                <input id="resultadoMandante" type="number" min="0" max="30" required>
+              </label>
+              <label>Gols do visitante
+                <input id="resultadoVisitante" type="number" min="0" max="30" required>
+              </label>
+            </div>
+            <button type="submit">Salvar resultado</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Horário de partida</h3>
+          <form id="formHorario">
+            <label>Partida
+              <select id="horarioJogo" required></select>
+            </label>
+            <label>Novo horário
+              <input id="novoHorario" type="datetime-local" required>
+            </label>
+            <button type="submit">Alterar horário</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Participantes</h3>
+          <p class="muted">Os participantes criam as próprias contas usando o convite.</p>
+          <div id="listaUsuarios"></div>
+        </div>
+
+        <div class="card">
+          <h3>Palpites registrados</h3>
+          <div id="listaPalpitesAdmin"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    // Acesso seguro ao sessionStorage (pode ser bloqueado em alguns navegadores)
+    const guardar = {
+      ler() { try { return sessionStorage.getItem("bolaoToken") || ""; } catch (e) { return ""; } },
+      salvar(v) { try { sessionStorage.setItem("bolaoToken", v); } catch (e) {} },
+      apagar() { try { guardar.apagar(); } catch (e) {} }
+    };
+
+    const estado = {
+      token: guardar.ler(),
+      usuario: null,
+      dados: null,
+      carregando: false
+    };
+
+    const $ = id => document.getElementById(id);
+
+    function mostrarMensagem(texto, tipo) {
+      const el = $("mensagem");
+      el.textContent = texto;
+      el.className = "aviso " + (tipo || "");
+      el.classList.remove("oculto");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function limparMensagem() {
+      $("mensagem").classList.add("oculto");
+    }
+
+    // Cole aqui o link /exec da implantação do Apps Script
+    // (necessário só quando esta página é hospedada fora do Google).
+    const API_URL = "COLE_AQUI_O_LINK_EXEC";
+
+    function chamarServidor(funcao, ...args) {
+      // Dentro do Apps Script: usa o método nativo.
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        return new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(erro => {
+              reject(new Error(erro && erro.message
+                ? erro.message : String(erro)));
+            })[funcao](...args);
+        });
+      }
+
+      // Fora do Google: chama a API do Apps Script.
+      if (!API_URL || API_URL.indexOf("COLE_AQUI") === 0) {
+        return Promise.reject(new Error(
+          "Falta configurar o API_URL no arquivo index.html."));
+      }
+
+      return fetch(API_URL, {
+        method: "POST",
+        // text/plain evita a verificação prévia (preflight) do navegador
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ funcao: funcao, args: args })
+      })
+        .catch(() => {
+          throw new Error("Não foi possível conectar ao servidor. Verifique sua internet.");
+        })
+        .then(r => r.text())
+        .then(texto => {
+          let resp;
+          try { resp = JSON.parse(texto); }
+          catch (e) { throw new Error("Resposta inválida do servidor."); }
+
+          if (!resp.ok) throw new Error(resp.erro || "Erro no servidor.");
+          return resp.dados;
+        });
+    }
+
+    async function executar(funcao, ...args) {
+      limparMensagem();
+
+      try {
+        return await chamarServidor(funcao, ...args);
+      } catch (erro) {
+        mostrarMensagem(erro.message || String(erro), "erro");
+        throw erro;
+      }
+    }
+
+    function alternarLogin(entrar) {
+      $("telaLogin").classList.toggle("oculto", !entrar);
+      $("telaApp").classList.toggle("oculto", entrar);
+    }
+
+    function abrirCadastro() {
+      $("painelCadastro").classList.remove("oculto");
+      $("formCadastro").reset();
+      $("cadNome").focus();
+    }
+
+    function fecharCadastro() {
+      $("painelCadastro").classList.add("oculto");
+    }
+
+    async function entrar(nome, pin) {
+      const resposta = await executar("login", nome, pin);
+      estado.token = resposta.token;
+      estado.usuario = resposta.usuario;
+      guardar.salvar(estado.token);
+      await carregar();
+    }
+
+    async function carregar() {
+      if (!estado.token) return;
+
+      try {
+        const dados = await chamarServidor("carregarDados", estado.token);
+        estado.dados = dados;
+        estado.usuario = dados.usuario;
+        desenharAplicativo();
+        alternarLogin(false);
+      } catch (erro) {
+        guardar.apagar();
+        estado.token = "";
+        estado.usuario = null;
+        alternarLogin(true);
+        mostrarMensagem(erro.message || String(erro), "erro");
+      }
+    }
+
+    async function atualizarDadosSemBloqueio() {
+      const dados = await chamarServidor("carregarDados", estado.token);
+      estado.dados = dados;
+      estado.usuario = dados.usuario;
+      desenharAplicativo();
+      return dados;
+    }
+
+    async function acao(funcao, ...args) {
+      try {
+        await executar(funcao, estado.token, ...args);
+        await atualizarDadosSemBloqueio();
+        mostrarMensagem("Operação concluída com sucesso.", "ok");
+      } catch (erro) {
+        // A mensagem já é mostrada por executar().
+      }
+    }
+
+    function textoSeguro(valor) {
+      return String(valor == null ? "" : valor)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function desenharAplicativo() {
+      const d = estado.dados;
+      if (!d) return;
+
+      $("usuarioTopo").textContent = d.usuario.nome;
+      $("nomeUsuario").textContent = d.usuario.nome;
+      $("perfilUsuario").textContent =
+        d.usuario.perfil === "ADMIN" ? "ADMINISTRADOR" : "PARTICIPANTE";
+
+      $("abaAdmin").classList.toggle("oculto",
+        d.usuario.perfil !== "ADMIN");
+
+      desenharJogos();
+      desenharRanking();
+      desenharMeusPalpites();
+      desenharAdmin();
+    }
+
+    function escudoHtml(url) {
+      url = String(url || "").trim();
+      if (!/^https?:\/\//i.test(url)) return "";
+      return `<img class="escudo" src="${textoSeguro(url)}" alt="" loading="lazy"
+        referrerpolicy="no-referrer" onerror="this.style.display='none'">`;
+    }
+
+    function desenharJogos() {
+      const d = estado.dados;
+      const filtro = $("filtroRodada").value;
+      const rodadas = [...new Set(d.jogos.map(j => j.rodada))]
+        .sort((a, b) => a - b);
+
+      const filtroAtual = filtro;
+      $("filtroRodada").innerHTML =
+        '<option value="">Todas as rodadas</option>' +
+        rodadas.map(r =>
+          `<option value="${r}">Rodada ${r}</option>`
+        ).join("");
+      $("filtroRodada").value = filtroAtual;
+
+      const meus = d.meusPalpites || [];
+      let jogos = d.jogos.slice().sort((a, b) =>
+        new Date(a.dataHora) - new Date(b.dataHora));
+
+      if (filtro) jogos = jogos.filter(j => String(j.rodada) === filtro);
+
+      if (!jogos.length) {
+        $("listaJogos").innerHTML =
+          '<div class="vazio">Nenhuma partida cadastrada ainda.</div>';
+        return;
+      }
+
+      $("listaJogos").innerHTML = jogos.map(j => {
+        const p = meus.find(x => String(x.jogoId) === String(j.id));
+        const fechado = j.status === "ENCERRADO" ||
+          new Date() >= new Date(j.dataHora);
+        const admin = d.usuario.perfil === "ADMIN";
+        const resultado = j.status === "ENCERRADO";
+        const podePalpitar = !fechado;
+
+        return `
+          <article class="jogo">
+            <div class="jogoTopo">
+              <span>Rodada ${j.rodada}</span>
+              <span>${textoSeguro(j.dataExibicao)}</span>
+            </div>
+            <div class="confronto">
+              <div class="time">
+                ${escudoHtml(j.escudoMandante)}<span class="sigla">${textoSeguro(j.mandanteSigla)}</span>
+                ${textoSeguro(j.mandante)}
+              </div>
+              <div>
+                ${resultado
+                  ? `<div class="placarResultado">${j.golsMandante} × ${j.golsVisitante}</div>`
+                  : `<div class="placar">
+                      <input aria-label="Seu palpite para ${textoSeguro(j.mandante)}"
+                        id="pm_${j.id}" type="number" min="0" max="30"
+                        value="${p ? p.golsMandante : ""}"
+                        ${podePalpitar ? "" : "disabled"}>
+                      <span>×</span>
+                      <input aria-label="Seu palpite para ${textoSeguro(j.visitante)}"
+                        id="pv_${j.id}" type="number" min="0" max="30"
+                        value="${p ? p.golsVisitante : ""}"
+                        ${podePalpitar ? "" : "disabled"}>
+                    </div>`}
+              </div>
+              <div class="time">
+                ${escudoHtml(j.escudoVisitante)}<span class="sigla">${textoSeguro(j.visitanteSigla)}</span>
+                ${textoSeguro(j.visitante)}
+              </div>
+            </div>
+            <div class="linha">
+              <span class="tag">${resultado ? "Encerrado" :
+                fechado ? "Palpites fechados" : "Palpites abertos"}</span>
+              ${podePalpitar
+                ? `<button class="pequeno" onclick="salvarPalpiteTela('${j.id}')">
+                    ${p ? "Atualizar palpite" : "Salvar palpite"}
+                   </button>`
+                : ""}
+            </div>
+          </article>`;
+      }).join("");
+    }
+
+    async function salvarPalpiteTela(jogoId) {
+      const m = $("pm_" + jogoId);
+      const v = $("pv_" + jogoId);
+
+      if (!m || !v || m.value === "" || v.value === "") {
+        mostrarMensagem("Preencha os dois placares.", "erro");
+        return;
+      }
+
+      try {
+        await executar("salvarPalpite", estado.token, jogoId,
+          Number(m.value), Number(v.value));
+        await atualizarDadosSemBloqueio();
+        mostrarMensagem("Palpite salvo com sucesso!", "ok");
+      } catch (erro) {}
+    }
+
+    function desenharRanking() {
+      const ranking = estado.dados.ranking || [];
+
+      if (!ranking.length) {
+        $("listaRanking").innerHTML =
+          '<div class="vazio">Ainda não há participantes.</div>';
+        return;
+      }
+
+      $("listaRanking").innerHTML = ranking.map(r => `
+        <div class="linha">
+          <div>
+            <strong>${r.posicao}º — ${textoSeguro(r.nome)}</strong>
+            <div class="muted">${r.exatos} placar(es) exato(s)</div>
+          </div>
+          <div style="text-align:right">
+            <strong class="verde">${r.pontos} pts</strong>
+            <div class="muted">${r.palpitesFeitos} resultados pontuados</div>
+          </div>
+        </div>`).join("");
+    }
+
+    function desenharMeusPalpites() {
+      const d = estado.dados;
+      const meus = d.meusPalpites || [];
+
+      if (!meus.length) {
+        $("listaMeus").innerHTML =
+          '<div class="vazio">Você ainda não salvou palpites.</div>';
+        return;
+      }
+
+      $("listaMeus").innerHTML = meus.map(p => {
+        const j = d.jogos.find(x => String(x.id) === String(p.jogoId));
+        if (!j) return "";
+
+        const resultado = j.status === "ENCERRADO";
+        let pontos = "";
+
+        if (resultado) {
+          const palpite = {
+            golsMandante: Number(p.golsMandante),
+            golsVisitante: Number(p.golsVisitante)
+          };
+          const rm = Number(j.golsMandante);
+          const rv = Number(j.golsVisitante);
+          const exato = palpite.golsMandante === rm &&
+            palpite.golsVisitante === rv;
+          const acertou = Math.sign(palpite.golsMandante -
+            palpite.golsVisitante) === Math.sign(rm - rv);
+
+          pontos = `<div class="muted">${exato ? "5 pontos — placar exato" :
+            acertou ? "3 pontos — resultado correto" :
+            "0 pontos"}</div>`;
+        }
+
+        return `<div class="linha">
+          <div>
+            <strong>${textoSeguro(j.mandante)} × ${textoSeguro(j.visitante)}</strong>
+            <div class="muted">${textoSeguro(j.dataExibicao)}</div>
+            ${pontos}
+          </div>
+          <strong>${p.golsMandante} × ${p.golsVisitante}</strong>
+        </div>`;
+      }).join("");
+    }
+
+    function preencherSelect(id, opcoes, placeholder) {
+      const el = $(id);
+      const anterior = el.value;
+      el.innerHTML = `<option value="">${placeholder}</option>` +
+        opcoes.map(o =>
+          `<option value="${textoSeguro(o.value)}">${textoSeguro(o.texto)}</option>`
+        ).join("");
+
+      if (opcoes.some(o => String(o.value) === anterior)) {
+        el.value = anterior;
+      }
+    }
+
+    function desenharAdmin() {
+      const d = estado.dados;
+      if (d.usuario.perfil !== "ADMIN") return;
+
+      const times = d.times.map(t => ({
+        value: t.id,
+        texto: `${t.sigla} — ${t.nome}`
+      }));
+
+      preencherSelect("jogoMandante", times, "Escolha o mandante");
+      preencherSelect("jogoVisitante", times, "Escolha o visitante");
+
+      const jogos = d.jogos.map(j => ({
+        value: j.id,
+        texto: `R${j.rodada}: ${j.mandante} x ${j.visitante} (${j.dataExibicao})`
+      }));
+
+      preencherSelect("resultadoJogo", jogos, "Escolha a partida");
+      preencherSelect("horarioJogo", jogos.filter(j => {
+        const jogo = d.jogos.find(x => String(x.id) === String(j.value));
+        return jogo && jogo.status !== "ENCERRADO";
+      }), "Escolha a partida");
+
+      $("listaUsuarios").innerHTML = d.usuarios.map(u => `
+        <div class="linha">
+          <div>
+            <strong>${textoSeguro(u.nome)}</strong>
+            <div class="muted">${textoSeguro(u.perfil)} · ${u.ativo ? "Ativo" : "Inativo"}</div>
+          </div>
+          ${u.ativo && u.perfil !== "ADMIN"
+            ? `<button class="perigo pequeno"
+                onclick="desativarUsuario('${u.id}','${textoSeguro(u.nome)}')">
+                Desativar
+               </button>` : ""}
+        </div>`).join("") || '<div class="vazio">Nenhum participante.</div>';
+
+      $("listaPalpitesAdmin").innerHTML = d.palpitesAdmin.map(p => `
+        <div class="linha">
+          <div>
+            <strong>${textoSeguro(p.nome)}</strong>
+            <div class="muted">${textoSeguro(p.jogo)}</div>
+          </div>
+          <strong>${textoSeguro(p.placar)}</strong>
+        </div>`).join("") || '<div class="vazio">Nenhum palpite registrado.</div>';
+    }
+
+    async function desativarUsuario(id, nome) {
+      if (!confirm(`Desativar a conta de ${nome}?`)) return;
+      await acao("removerUsuario", id);
+    }
+
+    function selecionarAba(nome) {
+      document.querySelectorAll(".painelAba").forEach(p =>
+        p.classList.add("oculto"));
+
+      const painel = $("painel" + nome.charAt(0).toUpperCase() + nome.slice(1));
+      if (painel) painel.classList.remove("oculto");
+
+      document.querySelectorAll(".abaBotao").forEach(b =>
+        b.classList.toggle("ativa", b.dataset.aba === nome));
+    }
+
+    $("formLogin").addEventListener("submit", async e => {
+      e.preventDefault();
+
+      try {
+        await entrar($("loginNome").value, $("loginPin").value);
+        $("formLogin").reset();
+        mostrarMensagem("Login realizado com sucesso!", "ok");
+      } catch (erro) {}
+    });
+
+    $("abrirCadastro").addEventListener("click", abrirCadastro);
+    $("cancelarCadastro").addEventListener("click", fecharCadastro);
+
+    $("formCadastro").addEventListener("submit", async e => {
+      e.preventDefault();
+
+      const nome = $("cadNome").value.trim();
+      const pin = $("cadPin").value;
+      const pin2 = $("cadPin2").value;
+      const convite = $("cadConvite").value.trim();
+
+      if (pin !== pin2) {
+        mostrarMensagem("Os PINs não são iguais.", "erro");
+        return;
+      }
+
+      try {
+        const resposta = await executar("cadastrarConta", nome, pin, convite);
+        estado.token = resposta.token;
+        estado.usuario = resposta.usuario;
+        guardar.salvar(estado.token);
+        fecharCadastro();
+        $("formCadastro").reset();
+        await carregar();
+        mostrarMensagem("Conta criada! Você já está no bolão.", "ok");
+      } catch (erro) {}
+    });
+
+    $("btnSair").addEventListener("click", async () => {
+      try {
+        await chamarServidor("sair", estado.token);
+      } catch (e) {}
+
+      guardar.apagar();
+      estado.token = "";
+      estado.usuario = null;
+      estado.dados = null;
+      alternarLogin(true);
+      fecharCadastro();
+      limparMensagem();
+    });
+
+    document.querySelectorAll(".abaBotao").forEach(botao => {
+      botao.addEventListener("click", () => selecionarAba(botao.dataset.aba));
+    });
+
+    $("filtroRodada").addEventListener("change", desenharJogos);
+
+    $("formPin").addEventListener("submit", async e => {
+      e.preventDefault();
+
+      if ($("pinNovo").value !== $("pinNovo2").value) {
+        mostrarMensagem("Os novos PINs não são iguais.", "erro");
+        return;
+      }
+
+      try {
+        await executar("alterarPin", estado.token,
+          $("pinAtual").value, $("pinNovo").value);
+        $("formPin").reset();
+        mostrarMensagem("PIN alterado com sucesso.", "ok");
+      } catch (erro) {}
+    });
+
+    $("formTime").addEventListener("submit", async e => {
+      e.preventDefault();
+
+      try {
+        await executar("cadastrarTime", estado.token,
+          $("timeNome").value, $("timeSigla").value, $("timeEscudo").value);
+        $("formTime").reset();
+        await atualizarDadosSemBloqueio();
+        mostrarMensagem("Time cadastrado.", "ok");
+      } catch (erro) {}
+    });
+
+    $("formJogo").addEventListener("submit", async e => {
+      e.preventDefault();
+
+      if ($("jogoMandante").value === $("jogoVisitante").value) {
+        mostrarMensagem("Escolha dois times diferentes.", "erro");
+        return;
+      }
+
+      try {
+        await executar("cadastrarJogo", estado.token,
+          $("jogoRodada").value,
+          $("jogoMandante").value,
+          $("jogoVisitante").value,
+          $("jogoData").value);
+        $("formJogo").reset();
+        await atualizarDadosSemBloqueio();
+        mostrarMensagem("Jogo cadastrado.", "ok");
+      } catch (erro) {}
+    });
+
+    $("formResultado").addEventListener("submit", async e => {
+      e.preventDefault();
+
+      try {
+        await executar("registrarResultado", estado.token,
+          $("resultadoJogo").value,
+          $("resultadoMandante").value,
+          $("resultadoVisitante").value);
+        $("formResultado").reset();
+        await atualizarDadosSemBloqueio();
+        mostrarMensagem("Resultado registrado e ranking atualizado.", "ok");
+      } catch (erro) {}
+    });
+
+    $("formHorario").addEventListener("submit", async e => {
+      e.preventDefault();
+
+      try {
+        await executar("editarHorarioJogo", estado.token,
+          $("horarioJogo").value, $("novoHorario").value);
+        $("formHorario").reset();
+        await atualizarDadosSemBloqueio();
+        mostrarMensagem("Horário atualizado.", "ok");
+      } catch (erro) {}
+    });
+
+    (async function iniciar() {
+      if (estado.token) {
+        await carregar();
+      } else {
+        alternarLogin(true);
+      }
+    })();
+  </script>
+</body>
+</html>
