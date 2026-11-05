@@ -404,6 +404,13 @@
     body.modoPrint #painelRanking { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 16px; background: var(--painel); }
     body.modoPrint .noPrint { display: none !important; }
     body.modoPrint .sairPrint { visibility: visible !important; display: block !important; position: fixed; right: 12px; top: 12px; z-index: 999; }
+    .sharePrint { display: none; }
+    body.modoPrint .sharePrint, body.modoPrint .sharePrint * { visibility: visible !important; }
+    body.modoPrint #painelRanking { padding-bottom: 96px; }
+    body.modoPrint .sharePrint { display: flex !important; position: fixed; left: 0; right: 0; bottom: 0; z-index: 999;
+      gap: 8px; justify-content: center; padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+      background: var(--painel); border-top: 1px solid var(--borda); }
+    body.modoPrint .sharePrint button { flex: 1; max-width: 360px; padding: 14px; font-size: 16px; }
   </style>
 </head>
 
@@ -498,6 +505,8 @@
             <div class="muted">Bem-vindo(a),</div>
             <h2 id="nomeUsuario" style="margin:5px 0"></h2>
             <span id="perfilUsuario" class="tag"></span>
+            <button id="btnStatusAcessos" type="button" class="tag oculto"
+              style="cursor:pointer;border:0;margin-left:6px" title="Ver registro de entradas">👁 Acessos</button>
           </div>
           <button id="btnSair" class="secundario pequeno">Sair</button>
         </div>
@@ -853,6 +862,24 @@
   </div>
 
   <button id="btnSairPrint" class="sairPrint pequeno">✕ Sair do print</button>
+  <div id="modalAcessos" class="oculto" style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:80;overflow:auto;padding:16px">
+    <div class="card" style="max-width:560px;margin:30px auto">
+      <div class="linha">
+        <h2 style="margin:0">Entradas no app</h2>
+        <button id="btnFecharAcessos" type="button" class="secundario pequeno">Fechar</button>
+      </div>
+      <div id="resumoAcessos" class="muted" style="margin:10px 0"></div>
+      <h3>Por participante</h3>
+      <div id="porNomeAcessos"></div>
+      <h3>Últimas entradas</h3>
+      <div id="listaAcessosModal"></div>
+    </div>
+  </div>
+
+  <div class="sharePrint">
+    <button id="btnCompartilharPrint" type="button" disabled>Preparando imagem...</button>
+    <button id="btnBaixarPrint" type="button" class="secundario" disabled>⬇️ Baixar</button>
+  </div>
 
   <div id="toast"><span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span id="toastTexto"></span></div>
 
@@ -1070,6 +1097,9 @@
       $("nomeUsuario").textContent = d.usuario.nome;
       $("perfilUsuario").textContent =
         d.usuario.perfil === "ADMIN" ? "ADMINISTRADOR" : "PARTICIPANTE";
+      const ehAdm = d.usuario.perfil === "ADMIN";
+      $("btnStatusAcessos").classList.toggle("oculto", !ehAdm);
+      if (ehAdm) atualizarAcessos();
 
       $("abaAdmin").classList.toggle("oculto",
         d.usuario.perfil !== "ADMIN");
@@ -2283,12 +2313,108 @@ vitoria|Vitória|#e31b23|#140b0c|#ffffff`.split("\n").forEach(l => {
     });
 
     /* ===== Modo print do ranking ===== */
-    $("btnModoPrint").addEventListener("click", () => {
-      window.scrollTo(0, 0);
-      document.body.classList.add("modoPrint");
+    /* ===== Registro de entradas (admin) ===== */
+    async function atualizarAcessos() {
+      try {
+        const r = await chamarServidor("listarAcessos", estado.token);
+        desenharAcessos(r);
+      } catch (e) { /* silencioso: o indicador só fica sem número */ }
+    }
+
+    function desenharAcessos(r) {
+      r = { total: r.total || 0, porNome: r.porNome || [], lista: r.lista || [] };
+      $("btnStatusAcessos").textContent = "👁 Acessos: " + r.total;
+      $("resumoAcessos").textContent = r.total + " entrada(s) · " +
+        r.porNome.length + " participante(s) já entraram";
+      $("porNomeAcessos").innerHTML = r.porNome.length
+        ? r.porNome.map(p => `<div class="linha" style="padding:6px 0">
+            <span>${textoSeguro(p.nome)} <span class="muted">· ${p.entradas}x</span></span>
+            <span class="muted">${textoSeguro(p.ultima)}</span></div>`).join("")
+        : '<div class="vazio">Nenhum acesso registrado ainda.</div>';
+      $("listaAcessosModal").innerHTML = r.lista.length
+        ? r.lista.map(a => `<div class="linha" style="padding:6px 0">
+            <span>${textoSeguro(a.nome)}</span>
+            <span class="muted">${textoSeguro(a.data)}</span></div>`).join("")
+        : '<div class="vazio">Nenhum acesso registrado ainda.</div>';
+    }
+
+    $("btnStatusAcessos").addEventListener("click", () => {
+      $("modalAcessos").classList.remove("oculto");
+      atualizarAcessos();
     });
+    $("btnFecharAcessos").addEventListener("click", () => {
+      $("modalAcessos").classList.add("oculto");
+    });
+    $("modalAcessos").addEventListener("click", e => {
+      if (e.target === $("modalAcessos")) $("modalAcessos").classList.add("oculto");
+    });
+
+    let imgPrint = null;
+
+    function carregarHtml2canvas() {
+      if (window.html2canvas) return Promise.resolve();
+      return new Promise((ok, no) => {
+        const sc = document.createElement("script");
+        sc.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+        sc.onload = ok;
+        sc.onerror = () => no(new Error("gerador"));
+        document.head.appendChild(sc);
+      });
+    }
+
+    async function gerarImagemPrint() {
+      await carregarHtml2canvas();
+      const el = $("painelRanking");
+      const bg = getComputedStyle(el).backgroundColor || "#ffffff";
+      const canvas = await html2canvas(el, { scale: 2, backgroundColor: bg });
+      return new Promise(r => canvas.toBlob(r, "image/png"));
+    }
+
+    // Abre direto na tela de print e já prepara a imagem do ranking.
+    $("btnModoPrint").addEventListener("click", async () => {
+      window.scrollTo(0, 0);
+      imgPrint = null;
+      document.body.classList.add("modoPrint");
+      const bComp = $("btnCompartilharPrint"), bBaixar = $("btnBaixarPrint");
+      bComp.disabled = true; bBaixar.disabled = true;
+      bComp.textContent = "Preparando imagem...";
+      try {
+        imgPrint = await gerarImagemPrint();
+        bComp.textContent = "📤 Compartilhar";
+        bComp.disabled = false; bBaixar.disabled = false;
+      } catch (erro) {
+        bComp.textContent = "Imagem indisponível";
+        mostrarMensagem("Não consegui gerar a imagem. Verifique a internet e tente de novo.", "erro");
+      }
+    });
+
+    $("btnCompartilharPrint").addEventListener("click", async () => {
+      if (!imgPrint) return;
+      const arquivo = new File([imgPrint], "ranking-bolao.png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+        try {
+          await navigator.share({ files: [arquivo], title: "Ranking Bolão FC" });
+          return;
+        } catch (e) { return; }   // usuário cancelou
+      }
+      baixarImagemPrint();
+    });
+
+    function baixarImagemPrint() {
+      if (!imgPrint) return;
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(imgPrint);
+      a.download = "ranking-bolao.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    $("btnBaixarPrint").addEventListener("click", baixarImagemPrint);
+
     $("btnSairPrint").addEventListener("click", () => {
       document.body.classList.remove("modoPrint");
+      imgPrint = null;
     });
 
     /* ===== Excluir participante (conta já desativada) ===== */
