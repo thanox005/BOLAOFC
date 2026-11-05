@@ -411,6 +411,9 @@
       gap: 8px; justify-content: center; padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
       background: var(--painel); border-top: 1px solid var(--borda); }
     body.modoPrint .sharePrint button { flex: 1; max-width: 360px; padding: 14px; font-size: 16px; }
+    .linha.podio { border-color: var(--verde); box-shadow: 0 0 0 1px var(--verde) inset; }
+    .medalha { font-size: 20px; margin-right: 4px; }
+    #avisoLembrete { border-color: var(--verde); }
   </style>
 </head>
 
@@ -538,6 +541,7 @@
           <select id="filtroRodada" class="oculto">
             <option value="">Todas as rodadas</option>
           </select>
+          <div id="avisoLembrete" class="card oculto"></div>
           <div id="listaJogos"></div>
         </div>
       </section>
@@ -869,10 +873,7 @@
         <button id="btnFecharAcessos" type="button" class="secundario pequeno">Fechar</button>
       </div>
       <div id="resumoAcessos" class="muted" style="margin:10px 0"></div>
-      <h3>Por participante</h3>
       <div id="porNomeAcessos"></div>
-      <h3>Últimas entradas</h3>
-      <div id="listaAcessosModal"></div>
     </div>
   </div>
 
@@ -1287,7 +1288,30 @@
       });
     }
 
+    // Lembrete para o jogador: jogos abertos sem palpite.
+    function atualizarLembrete() {
+      const box = $("avisoLembrete");
+      if (!box) return;
+      const d = estado.dados;
+      if (!d || !estado.usuario || estado.usuario.perfil === "ADMIN") {
+        box.classList.add("oculto"); return;
+      }
+      const agora = new Date();
+      const feitos = new Set((d.meusPalpites || []).map(p => String(p.jogoId)));
+      const pend = (d.jogos || []).filter(j =>
+        j.status !== "ENCERRADO" && agora < new Date(j.limite) && !feitos.has(String(j.id)));
+      if (!pend.length) { box.classList.add("oculto"); return; }
+
+      pend.sort((a, b) => new Date(a.limite) - new Date(b.limite));
+      const prox = pend[0];
+      box.innerHTML = "⏰ Você tem <strong>" + pend.length + "</strong> jogo(s) sem palpite. " +
+        "Próximo prazo: <strong>" + textoSeguro(prox.limiteExibicao) + "</strong> (" +
+        textoSeguro(prox.mandanteSigla) + " × " + textoSeguro(prox.visitanteSigla) + ").";
+      box.classList.remove("oculto");
+    }
+
     function atualizarBarra() {
+      atualizarLembrete();
       const n = estado.dados && estado.usuario && estado.usuario.perfil !== "ADMIN"
         ? sujosRodada().length : 0;
       const visivel = n > 0 &&
@@ -1438,10 +1462,11 @@
         return;
       }
 
+      const medalha = p => ["🥇", "🥈", "🥉"][p - 1] || "";
       $("listaRanking").innerHTML = ranking.map(r => `
-        <div class="linha">
+        <div class="linha ${r.posicao <= 3 && r.pontos > 0 ? "podio" : ""}">
           <div>
-            <strong>${r.posicao}º — ${textoSeguro(r.nome)}</strong>
+            <strong>${r.posicao <= 3 && r.pontos > 0 ? `<span class="medalha">${medalha(r.posicao)}</span>` : ""}${r.posicao}º — ${textoSeguro(r.nome)}</strong>
             <div class="muted">${r.exatos} placar(es) exato(s)</div>
           </div>
           <div style="text-align:right">
@@ -2322,19 +2347,18 @@ vitoria|Vitória|#e31b23|#140b0c|#ffffff`.split("\n").forEach(l => {
     }
 
     function desenharAcessos(r) {
-      r = { total: r.total || 0, porNome: r.porNome || [], lista: r.lista || [] };
+      r = { total: r.total || 0, porNome: r.porNome || [] };
       $("btnStatusAcessos").textContent = "👁 Acessos: " + r.total;
       $("resumoAcessos").textContent = r.total + " entrada(s) · " +
-        r.porNome.length + " participante(s) já entraram";
+        r.porNome.length + " participante(s) já entraram. Toque no nome para ver as datas.";
       $("porNomeAcessos").innerHTML = r.porNome.length
-        ? r.porNome.map(p => `<div class="linha" style="padding:6px 0">
-            <span>${textoSeguro(p.nome)} <span class="muted">· ${p.entradas}x</span></span>
-            <span class="muted">${textoSeguro(p.ultima)}</span></div>`).join("")
-        : '<div class="vazio">Nenhum acesso registrado ainda.</div>';
-      $("listaAcessosModal").innerHTML = r.lista.length
-        ? r.lista.map(a => `<div class="linha" style="padding:6px 0">
-            <span>${textoSeguro(a.nome)}</span>
-            <span class="muted">${textoSeguro(a.data)}</span></div>`).join("")
+        ? r.porNome.map(p => `<details class="bloco">
+            <summary><span>${textoSeguro(p.nome)}</span>
+              <span class="muted">${p.entradas}x · última ${textoSeguro(p.ultima)}</span></summary>
+            <div class="corpo">${p.datas.map(d =>
+              `<div class="linha" style="padding:5px 0"><span class="muted">${textoSeguro(d)}</span></div>`
+            ).join("")}</div>
+          </details>`).join("")
         : '<div class="vazio">Nenhum acesso registrado ainda.</div>';
     }
 
